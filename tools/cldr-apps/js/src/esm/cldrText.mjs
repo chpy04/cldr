@@ -471,6 +471,14 @@ const strings = {
   report_notAcceptable: "Not Acceptable",
   report_missing: "Missing",
 
+  // for approval status, see VoteResolver.Status
+  status_approved: "✅\uFE0F",
+  status_contributed: "☑️",
+  status_provisional: "✖️",
+  status_unconfirmed: "❌\uFE0F",
+  status_missing: "🕳️",
+  status_inherited: "⬆️",
+
   special_about: "About Survey Tool",
   special_announcements: "Announcements",
   special_account: "Account Settings",
@@ -492,7 +500,7 @@ const strings = {
   special_locales: "Locale List",
   special_lock_account: "Lock (Disable) My Account",
   special_lookup: "Look up a code or xpath",
-  special_mail: "Notifications (SMOKETEST ONLY)",
+  special_mail: "Simulate Email Notifications (SMOKETEST ONLY)",
   special_menu: "☰",
   special_oldvotes: "Import Old Votes",
   special_upload: "Upload (Bulk Import)",
@@ -530,6 +538,8 @@ const strings = {
   lock_account_err_reason: "The reason for the request must be filled in.",
   lock_account_success:
     "The account has been locked successfully. Thank you for using the Survey Tool. If you have difficulty still, contact the person who set up your account.",
+
+  mail_noMail: "No simulated notification emails.",
 
   notification_category_abstained:
     "You have abstained, or not yet voted for any value.",

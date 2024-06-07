@@ -7723,6 +7723,22 @@ annotations.
 				<unitPattern count="one">{0} of gasoline equivalent</unitPattern>
 				<unitPattern count="other">{0} of gasoline equivalent</unitPattern>
 			</unit>
+			<unit type="speed-light-speed">
+				<displayName>light</displayName>
+				<unitPattern count="one">{0} light</unitPattern>
+				<unitPattern count="other">{0} light</unitPattern>
+			</unit>
+			<unit type="concentr-portion-per-1e9">
+				<displayName>parts per billion</displayName>
+				<unitPattern count="one">{0} part per billion</unitPattern>
+				<unitPattern count="other">{0} parts per billion</unitPattern>
+			</unit>
+			<unit type="duration-night">
+				<displayName>nights</displayName>
+				<unitPattern count="one">{0} night</unitPattern>
+				<unitPattern count="other">{0} nights</unitPattern>
+				<perUnitPattern>{0} per night</perUnitPattern>
+			</unit>
 			<coordinateUnit>
 				<displayName>cardinal direction</displayName>
 				<coordinateUnitPattern type="east">{0} east</coordinateUnitPattern>
@@ -8795,6 +8811,22 @@ annotations.
 				<unitPattern count="one">{0} gas-equiv</unitPattern>
 				<unitPattern count="other">{0} gas-equiv</unitPattern>
 			</unit>
+			<unit type="speed-light-speed">
+				<displayName>light</displayName>
+				<unitPattern count="one">{0} light</unitPattern>
+				<unitPattern count="other">{0} light</unitPattern>
+			</unit>
+			<unit type="concentr-portion-per-1e9">
+				<displayName>parts/billion</displayName>
+				<unitPattern count="one">{0} ppb</unitPattern>
+				<unitPattern count="other">{0} ppb</unitPattern>
+			</unit>
+			<unit type="duration-night">
+				<displayName>nights</displayName>
+				<unitPattern count="one">{0} night</unitPattern>
+				<unitPattern count="other">{0} nights</unitPattern>
+				<perUnitPattern>{0}/night</perUnitPattern>
+			</unit>
 			<coordinateUnit>
 				<displayName>direction</displayName>
 				<coordinateUnitPattern type="east">{0} E</coordinateUnitPattern>
@@ -9865,6 +9897,22 @@ annotations.
 				<displayName>gas-equiv</displayName>
 				<unitPattern count="one">{0}gas-equiv</unitPattern>
 				<unitPattern count="other">{0}gas-equiv</unitPattern>
+			</unit>
+			<unit type="speed-light-speed">
+				<displayName>light</displayName>
+				<unitPattern count="one">{0}light</unitPattern>
+				<unitPattern count="other">{0}light</unitPattern>
+			</unit>
+			<unit type="concentr-portion-per-1e9">
+				<displayName>ppb</displayName>
+				<unitPattern count="one">{0}ppb</unitPattern>
+				<unitPattern count="other">{0}ppb</unitPattern>
+			</unit>
+			<unit type="duration-night">
+				<displayName>nights</displayName>
+				<unitPattern count="one">{0}night</unitPattern>
+				<unitPattern count="other">{0}nights</unitPattern>
+				<perUnitPattern>{0}/night</perUnitPattern>
 			</unit>
 			<coordinateUnit>
 				<displayName>direction</displayName>

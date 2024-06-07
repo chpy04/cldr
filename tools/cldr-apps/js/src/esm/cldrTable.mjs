@@ -676,16 +676,19 @@ function getStatusIcon(statusClass) {
   switch (statusClass) {
     case "approved":
     case "contributed":
-      return "✓"; // U+2713
     case "missing":
     case "provisional":
     case "unconfirmed":
-      return "✘"; // U+2718
+      return cldrText.get(`status_${statusClass}`);
     case "inherited-provisional":
     case "inherited-unconfirmed":
-      return "↑"; // U+2191
+      return (
+        cldrText.get(`status_inherited`) +
+        "\u200B" +
+        getStatusIcon(statusClass.split("-")[1])
+      );
     default:
-      return "?"; // U+003F
+      return "\ufffd";
   }
 }
 
@@ -1128,6 +1131,8 @@ function appendForumStatus(parent, forumStatus, loc) {
     (forumStatus.hasOpenPosts
       ? cldrText.get("forum_path_has_open_posts")
       : cldrText.get("forum_path_has_only_closed_posts"));
+  el.style.backgroundColor = forumStatus.hasOpenPosts ? "orange" : "green";
+  el.style.padding = el.style.margin = ".5ex";
   cldrSurvey.setLang(el, loc);
   parent.appendChild(el);
   return el;

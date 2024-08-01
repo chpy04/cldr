@@ -11,6 +11,7 @@
 import * as cldrAddAlt from "./cldrAddAlt.mjs";
 import * as cldrAjax from "./cldrAjax.mjs";
 import * as cldrCoverage from "./cldrCoverage.mjs";
+import * as cldrDashContext from "./cldrDashContext.mjs";
 import * as cldrDom from "./cldrDom.mjs";
 import * as cldrEvent from "./cldrEvent.mjs";
 import * as cldrGui from "./cldrGui.mjs";
@@ -38,6 +39,13 @@ const NO_WINNING_VALUE = "no-winning-value";
  * Special input.value meaning an empty value as opposed to an abstention
  */
 const EMPTY_ELEMENT_VALUE = "❮EMPTY❯";
+
+/**
+ * Remember the element (HTMLTableCellElement or HTMLDivElement) that was most recently
+ * shown as "selected" (displayed with a thick border). When a new element gets selected,
+ * this is used for removing the border from the old one
+ */
+let lastShown = null;
 
 /**
  * Prepare rows to be inserted into the table
@@ -297,7 +305,7 @@ function refreshSingleRow(tr, theRow, onSuccess, onFailure) {
   cldrSurvey.showLoader(cldrText.get("loadingOneRow"));
 
   const xhrArgs = {
-    url: getSingleRowUrl(tr, theRow),
+    url: getSingleRowUrl(theRow),
     handleAs: "json",
     load: closureLoadHandler,
     error: closureErrHandler,
@@ -335,7 +343,7 @@ function singleRowLoadHandler(json, tr, theRow, onSuccess, onFailure) {
           "singleRowLoadHandler after onSuccess time = " + Date.now()
         );
       }
-      cldrGui.updateDashboardRow(json);
+      cldrDashContext.updateRow(json);
       cldrInfo.showRowObjFunc(tr, tr.proposedcell, tr.proposedcell.showFn);
       if (CLDR_TABLE_DEBUG) {
         console.log(
@@ -378,11 +386,11 @@ function singleRowErrHandler(err, tr, onFailure) {
   onFailure("err", err);
 }
 
-function getSingleRowUrl(tr, theRow) {
+function getSingleRowUrl(theRow) {
   const loc = cldrStatus.getCurrentLocale();
   const api = "voting/" + loc + "/row/" + theRow.xpstrid;
   let p = null;
-  if (cldrGui.dashboardIsVisible()) {
+  if (cldrDashContext.isVisible()) {
     p = new URLSearchParams();
     p.append("dashboard", "true");
   }
@@ -658,7 +666,7 @@ function updateRowStatusCell(tr, theRow, cell) {
   cell.className = "d-dr-" + statusClass + " statuscell";
   cell.innerHTML = getStatusIcon(statusClass);
   if (!cell.isSetup) {
-    cldrInfo.listen("", tr, cell, null);
+    listen("", tr, cell, null);
     cell.isSetup = true;
   }
 
@@ -738,7 +746,7 @@ function updateRowCodeCell(tr, theRow, cell) {
     cldrSurvey.appendExtraAttributes(cell, theRow);
   }
   if (!cell.isSetup) {
-    cldrInfo.listen("", tr, cell, null);
+    listen("", tr, cell, null);
     cell.isSetup = true;
   }
 }
@@ -781,7 +789,7 @@ function updateRowEnglishComparisonCell(tr, theRow, cell) {
     }
     cell.appendChild(infos);
   }
-  cldrInfo.listen(null, tr, cell, null);
+  listen(null, tr, cell, null);
   if (cldrStatus.getPermissions()?.userIsTC) {
     cldrAddAlt.addButton(cell, theRow.xpstrid);
   }
@@ -803,9 +811,6 @@ function updateRowProposedWinningCell(tr, theRow, cell, protoButton) {
   if (theRow.rowFlagged) {
     const flagIcon = cldrSurvey.addIcon(cell, "s-flag");
     flagIcon.title = cldrText.get("flag_desc");
-  } else if (theRow.canFlagOnLosing) {
-    const flagIcon = cldrSurvey.addIcon(cell, "s-flag-d");
-    flagIcon.title = cldrText.get("flag_d_desc");
   }
   cldrSurvey.setLang(cell);
   tr.proposedcell = cell;
@@ -826,7 +831,7 @@ function updateRowProposedWinningCell(tr, theRow, cell, protoButton) {
   } else {
     cell.showFn = function () {}; // nothing else to show
   }
-  cldrInfo.listen(null, tr, cell, cell.showFn);
+  listen(null, tr, cell, cell.showFn);
 }
 
 /**
@@ -977,7 +982,7 @@ function updateRowOthersCell(tr, theRow, cell, protoButton, formAdd) {
   }
 
   if (!hadOtherItems /*!onIE*/) {
-    cldrInfo.listen(null, tr, cell);
+    listen(null, tr, cell);
   }
   if (
     tr.myProposal &&
@@ -1011,7 +1016,7 @@ function addVitem(td, tr, theRow, item, newButton) {
   const div = document.createElement("div");
   const isWinner = td == tr.proposedcell;
   const testKind = cldrVote.getTestKind(item.tests);
-  cldrVote.setDivClass(div, testKind);
+  setDivClass(div, testKind);
   item.div = div; // back link
 
   const choiceField = document.createElement("div");
@@ -1042,7 +1047,9 @@ function addVitem(td, tr, theRow, item, newButton) {
       theRow.canFlagOnLosing &&
       !theRow.rowFlagged
     ) {
-      cldrSurvey.addIcon(choiceField, "i-stop"); // DEBUG
+      const stopIcon = cldrSurvey.addIcon(choiceField, "i-stop");
+      stopIcon.setAttribute("dir", "ltr");
+      stopIcon.title = cldrText.get("mustflag_explain_msg");
     }
   }
 
@@ -1055,7 +1062,7 @@ function addVitem(td, tr, theRow, item, newButton) {
     const historyText = " ☛" + item.history;
     const historyTag = cldrDom.createChunk(historyText, "span", "");
     choiceField.appendChild(historyTag);
-    cldrInfo.listen(historyText, tr, historyTag, null);
+    listen(historyText, tr, historyTag, null);
   }
 
   const surveyUser = cldrStatus.getSurveyUser();
@@ -1077,14 +1084,43 @@ function addVitem(td, tr, theRow, item, newButton) {
   div.appendChild(choiceField);
 
   // wire up the onclick function for the Info Panel
-  td.showFn = item.showFn = cldrInfo.showItemInfoFn(theRow, item);
+  td.showFn = item.showFn = showItemInfoFn(theRow, item);
   div.popParent = tr;
-  cldrInfo.listen(null, tr, div, td.showFn);
+  listen(null, tr, div, td.showFn);
   td.appendChild(div);
 
   if (item.example && item.value != item.examples) {
     appendExample(div, item.example);
   }
+}
+
+function setDivClassSelected(div, testKind) {
+  setDivClass(div, testKind);
+  setLastShown(div); // add thick border and remove it from previous selected element
+}
+
+function setDivClass(div, testKind) {
+  if (testKind == "Warning") {
+    div.className = "d-item-warn";
+  } else if (testKind == "Error") {
+    div.className = "d-item-err";
+  } else {
+    div.className = "d-item";
+  }
+}
+
+/**
+ * Return a function that will set theRow.selectedItem, which will result in
+ * showing info for the given candidate item in the Info Panel.
+ *
+ * @param {Object} theRow the data row
+ * @param {JSON} item JSON of the specific candidate item we are adding
+ * @returns the function
+ */
+function showItemInfoFn(theRow, item) {
+  return function (td) {
+    theRow.selectedItem = item;
+  };
 }
 
 /**
@@ -1227,7 +1263,7 @@ function updateRowNoAbstainCell(tr, theRow, noCell, proposedCell, protoButton) {
     noOpinion.value = null;
     const wrap = cldrVote.wrapRadio(noOpinion);
     noCell.appendChild(wrap);
-    cldrInfo.listen(null, tr, noCell);
+    listen(null, tr, noCell);
   } else if (tr.ticketOnly) {
     // ticket link
     if (!tr.theTable.json.canModify) {
@@ -1334,6 +1370,62 @@ function goToHeaderId(headerId) {
   }
 }
 
+/**
+ * Make the object "theObj" respond to being clicked. Clicking a cell in the main
+ * vetting table should make the cell highlighted, update the URL bar to show
+ * the hex id of the path for the row in question, and update the Info Panel if
+ * the Info Panel is open.
+ *
+ * This function suffers from extreme tech debt. It was formerly in the cldrInfo module.
+ * The fn parameter (a.k.a. showFn) shouldn't need to be preconstructed for each item in
+ * each row, attached to DOM elements, and passed around as a parameter in such a complicated way.
+ *
+ * @param {String} str the string to display
+ * @param {Node} tr the TR element that is clicked
+ * @param {Node} theObj to listen to, a.k.a. "hideIfLast"
+ * @param {Function} fn the draw function
+ */
+function listen(str, tr, theObj, fn) {
+  cldrDom.listenFor(theObj, "click", function (e) {
+    if (cldrInfo.panelShouldBeShown()) {
+      cldrInfo.show(str, tr, theObj /* hideIfLast */, fn);
+    } else {
+      updateSelectedRowAndCell(tr, theObj);
+    }
+    cldrEvent.stopPropagation(e);
+    return false;
+  });
+}
+
+function updateSelectedRowAndCell(tr, obj) {
+  if (tr?.sethash) {
+    cldrLoad.updateCurrentId(tr.sethash);
+  }
+  setLastShown(obj);
+}
+
+function setLastShown(obj) {
+  if (lastShown && obj != lastShown) {
+    cldrDom.removeClass(lastShown, "pu-select");
+    const partr = cldrDom.parentOfType("TR", lastShown);
+    if (partr) {
+      cldrDom.removeClass(partr, "selectShow");
+    }
+  }
+  if (obj) {
+    cldrDom.addClass(obj, "pu-select");
+    const partr = cldrDom.parentOfType("TR", obj);
+    if (partr) {
+      cldrDom.addClass(partr, "selectShow");
+    }
+  }
+  lastShown = obj;
+}
+
+function resetLastShown() {
+  lastShown = null;
+}
+
 export {
   NO_WINNING_VALUE,
   EMPTY_ELEMENT_VALUE,
@@ -1344,9 +1436,14 @@ export {
   goToHeaderId,
   insertRows,
   isHeaderId,
+  listen,
   makeRowId,
   refreshSingleRow,
+  resetLastShown,
+  setDivClassSelected,
+  setLastShown,
   updateRow,
+  updateSelectedRowAndCell,
   /*
    * The following are meant to be accessible for unit testing only:
    */

@@ -7,6 +7,7 @@ import * as cldrAjax from "./cldrAjax.mjs";
 import * as cldrBulkClosePosts from "./cldrBulkClosePosts.mjs";
 import * as cldrCoverage from "./cldrCoverage.mjs";
 import * as cldrCreateLogin from "./cldrCreateLogin.mjs";
+import * as cldrDashContext from "./cldrDashContext.mjs";
 import * as cldrDom from "./cldrDom.mjs";
 import * as cldrErrorSubtypes from "./cldrErrorSubtypes.mjs";
 import * as cldrEvent from "./cldrEvent.mjs";
@@ -109,7 +110,7 @@ function doHashChange(event) {
   const changedSpecial = oldSpecial != curSpecial;
   const changedPage = oldPage != trimNull(cldrStatus.getCurrentPage());
   if (changedLocale || (changedSpecial && curSpecial)) {
-    cldrGui.hideDashboard();
+    cldrDashContext.hide();
   }
   if (changedLocale || changedSpecial || changedPage) {
     console.log("# hash changed, (loc, etc) reloadingV..");
@@ -610,9 +611,9 @@ function specialLoad(itemLoadInfo, curSpecial, theDiv) {
   if (special && special.load) {
     cldrEvent.hideOverlayAndSidebar();
     if (curSpecial !== "general") {
-      cldrGui.hideDashboard();
+      cldrDashContext.hide();
     }
-    cldrInfo.closePanel();
+    cldrInfo.closePanel(false /* userWantsHidden */);
     // Most special.load() functions do not use a parameter; an exception is
     // cldrGenericVue.load() which expects the special name as a parameter
     if (CLDR_LOAD_DEBUG) {
@@ -1049,10 +1050,30 @@ function getLocaleDir(locale) {
   return localeDir;
 }
 
-function setTheLocaleMap(lm) {
-  locmap = lm;
+/** @returns true if locmap has been loaded from data */
+function localeMapReady() {
+  return !!locmap.locmap;
 }
 
+/** event ID for localeMap changes */
+const LOCALEMAP_EVENT = "localeMapReady";
+
+/**
+ * Calls the callback when the localeMap is ready (with real data).
+ * Calls right away if the localeMap was already loaded.
+ */
+function onLocaleMapReady(callback) {
+  if (localeMapReady()) {
+    callback();
+  } else {
+    cldrStatus.on(LOCALEMAP_EVENT, callback);
+  }
+}
+
+function setTheLocaleMap(lm) {
+  locmap = lm;
+  cldrStatus.dispatchEvent(new Event(LOCALEMAP_EVENT));
+}
 /**
  * Convenience for calling getTheLocaleMap().getLocaleName(loc)
  * @param {String} loc
@@ -1060,6 +1081,10 @@ function setTheLocaleMap(lm) {
  */
 function getLocaleName(loc) {
   return locmap.getLocaleName(loc);
+}
+
+function getLocaleInfo(loc) {
+  return locmap.getLocaleInfo(loc);
 }
 
 /**
@@ -1145,6 +1170,7 @@ export {
   flipToOtherDiv,
   getHash,
   getLocaleDir,
+  getLocaleInfo,
   getLocaleName,
   getTheLocaleMap,
   handleCoverageChanged,
@@ -1152,6 +1178,7 @@ export {
   linkToLocale,
   localeSpecialNote,
   myLoad,
+  onLocaleMapReady,
   parseHashAndUpdate,
   reloadV,
   replaceHash,
